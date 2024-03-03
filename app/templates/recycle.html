@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Image Description with GPT</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            flex-direction: column;
+        }
+        #input-container {
+            margin-bottom: 20px;
+            max-width: 600px;
+        }
+
+        #description {
+            text-align: center;
+            width: 90%;
+            max-width: 600px;
+            margin-top: 20px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            background-color: #f9f9f9;
+            display: none; /* Initially hidden */
+        }
+        button {
+            padding: 10px 20px;
+        }
+        .input-field {
+            width: 90%;
+            max-width: 600px;
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+            background-color: #fff;
+        }
+        #drop-zone {
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+            padding: 20px;
+            width: 90%;
+            max-width: 600px;
+            text-align: center;
+            margin-bottom: 20px;
+            background-color: #fff;
+            cursor: pointer;
+        }
+        #drop-zone:hover {
+            background-color: #f9f9f9;
+        }
+
+        .preview-image-container input[type=checkbox] {
+            display: none;
+        }
+
+        .preview-image-container img {
+            max-width: 90%;
+            max-height: 400px;
+            display: block;
+            margin-top: 20px;
+            transition: max-height 0.25s ease;
+            cursor: zoom-in;
+        }
+
+        .preview-image-container input[type=checkbox]:checked ~ label > img {
+            max-height: 100vh;
+            cursor: zoom-out;
+        }
+ #video-image {
+            width: 100%; /* Adjust the width as needed */
+            max-width: 600px; /* Limit the maximum width */
+            height: auto; /* Maintain aspect ratio */
+        }
+    </style>
+</head>
+<body>
+    <img style="width: 420px;margin-top: 311px;" src="{{ url_for('video_feed') }}">
+    <form id="myForm">
+        <button type="submit" onclick="refreshPage()">Submit</button>
+    </form>
+    <img  style="width: 420px;margin-top: 4px;" id="sourceImage" src="{{ url_for('static', filename='image.jpg') }}">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+    <script>
+        $(document).ready(function() {
+            $('#myForm').submit(function(event) {
+                event.preventDefault();
+                var name = $('#input').val();
+                $.post("/takeimage", { name: name }, function(data, status) {
+                    $('#preview').html('<img src="/preview">');
+                });
+            });
+        });
+
+        function refreshPage() {
+            location.reload(true);
+        }
+    </script>
+    <div id="sidebar">
+        {% include 'back_index.html' %}
+    </div>
+
+    <div id="drop-zone" onclick="fileInput.click()">
+        Drop Your Image Here or Click to Upload
+        <input id="fileInput" type="file" style="display:none" onchange="encodeImageFileAsURL(this)"/>
+    </div>
+    <textarea  class="input-field"  id="image-url" placeholder="Enter image URL or base64 data here..." hidden ></textarea>
+    <textarea class="input-field" id="prompt"  hidden>You are a Recycling Assistant. Detect this  objects and the possible labels . Steps: 
+        1) Remove all labels from the list above that might cause confusion (describing background, floor, wall, people, etc). Always remove labels like “hand”, “finger”, “nail". "gesture", "thumb". Some materials might describe the OBJECT. 
+        2) Analyze remaining labels. Choose the first OBJECT from the objectsString (with max probability) If OBJECT is "Unknown object", IGNORE it and only use labels. Define the OBJECT based solely on the labels. 
+        3) Define OBJECT_MATERIAL based on the labels (could be plastic, glass, etc.) 4) Recognize if the object is a living thing. If it is, do not write tips/advice and set OBJECT_IS_RECYCLABLE to false. 
+        5) Tell me IN DETAIL how to handle the recycling of the OBJECT (which container to use, how to prepare for recycling, etc.). Write it as advice, and be friendly, make it pretty long and interesting to read. If you notice multiple objects in the labels that can be part of one, write a recycling guide for parts of this object. Use formatting and emojis. Follow the same structure: "I think the object in the photo is a OBJECT_NAME. Let me help you recycle it: ", then write the steps as a html list with numbers and tags , and include specific recycling practices for materials like glass, paper, and plastic, based on WM's Recycling 101. 6) If the object is not recyclable, MUST write "<h3>No tips</h3>", otherwise, write tips and interesting recycling solutions for this object, always start that section from the tag <tips> and end with </tips>. The last line of your response must be tags containing OBJECT NAME and OBJECT_MATERIAL like this: <h1>OBJECT_MATERIAL add emoji</h1><h2>OBJECT_NAME</h2><h3>OBJECT_IS_RECYCLABLE add emoji<h3>
+        
+        the output is in balise p make it good looking   </textarea>
+
+    <div id="input-container">
+        <button hidden onclick="previewImage()">Preview</button>
+        <button onclick="askGPTVision()">Ask  </button>
+        <span>
+            <input type="checkbox" id="simple-prompt" hidden />
+            <label for="simple-prompt" hidden>Simple Prompt</label>
+        </span>
+    </div>
+
+    <div class="preview-image-container">
+        <input type="checkbox" id="zoomCheck">
+        <label for="zoomCheck">
+            <img id="image-preview" style="display:none;"></img>
+        </label>
+    </div>
+
+    <div id="description"></div>
+    
+
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    <script>
+        // Function to encode the image and populate the textarea
+        function encodeImageToTextarea() {
+            var img = document.getElementById('sourceImage');
+            var canvas = document.createElement('canvas');
+            var ctx = canvas.getContext('2d');
+
+            // Set canvas dimensions to the image dimensions
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            // Draw the image onto the canvas
+            ctx.drawImage(img, 0, 0);
+
+            // Get the base64 data from the canvas
+            var base64Data = canvas.toDataURL('image/jpeg');
+
+            // Populate the textarea with the base64 data
+            document.getElementById('image-url').value = base64Data;
+        }
+
+        // Call the function when the window loads
+        window.onload = encodeImageToTextarea;
+    </script>
+    <script>
+        
+        function onClickPrviewImage() {
+            const imagePreviewElement = document.getElementById('image-preview');
+            const newTab = window.open();
+            newTab.url = imagePreviewElement.src
+            newTab.onload = function() {
+                newTab.location.href=newTab.url
+            };
+            //newTab.document.body.style = "margin: 0px;background-color: rgb(14, 14, 14);display: flex;";
+            //newTab.document.body.innerHTML = `<img src="${imagePreviewElement.src}" style="display: block;margin: auto;">`;
+        }
+
+        function previewImage() {
+            const imageUrl = document.getElementById('image-url').value;
+            const imagePreviewElement = document.getElementById('image-preview');
+
+            // Display image preview
+            if (imageUrl) {
+                imagePreviewElement.src = imageUrl;
+                imagePreviewElement.style.display = 'block';
+            }
+        }
+
+        function askGPTVision() {
+            const imageUrl = document.getElementById('image-url').value;
+            const prompt = document.getElementById('prompt').value;
+            const imagePreviewElement = document.getElementById('image-preview');
+            const descriptionElement = document.getElementById('description');
+
+            // Display image preview
+            if (imageUrl) {
+                imagePreviewElement.src = imageUrl;
+                imagePreviewElement.style.display = 'block';
+                descriptionElement.style.display = 'block'; // Show the description box
+                descriptionElement.innerText = "Loading..."
+                
+                fetch('/ask', {
+                    method: 'POST',
+                    body: new URLSearchParams({ 'image_url': imageUrl, 'prompt': prompt }),
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                }).then(response => response.json()).then(data => {
+                    if (data.status === 'OK') {
+                        // Display AI's response
+                        descriptionElement.innerHTML = `<p>${data.answer}</p>`;
+                    } else {
+                        descriptionElement.innerHTML = `<p>${data.answer}</p>`;
+                    }
+                });
+            }
+        }
+
+        function imagineImage() {
+            let prompt = document.getElementById('prompt').value;
+            const imagePreviewElement = document.getElementById('image-preview');
+            const descriptionElement = document.getElementById('description');
+            const simplePromptCheckbox = document.getElementById('simple-prompt');
+            // Display image preview
+            if (prompt) {
+                if (simplePromptCheckbox.checked) {
+                    // https://platform.openai.com/docs/guides/images/prompting
+                    prompt = "I NEED to test how the tool works with extremely simple prompts. DO NOT add any detail, just use it AS-IS: " + prompt;
+                }
+                
+                descriptionElement.style.display = 'block'; // Show the description box
+                descriptionElement.innerText = "Loading ..."
+                fetch('/imagine', {
+                    method: 'POST',
+                    body: new URLSearchParams({ 'prompt': prompt }),
+                    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                }).then(response => response.json()).then(data => {
+                    if (data.status === 'OK') {
+                        // Display AI's response
+                        imagePreviewElement.style.display = 'none';
+                        imagePreviewElement.src = data["image_url"];
+                        imagePreviewElement.style.display = 'block';
+                        descriptionElement.innerText = data.answer
+                    } else {
+                        descriptionElement.innerHTML = `<p>${data.answer}</p>`;
+                    }
+                });
+            }
+        }
+
+        function encodeImageFileAsURL(image) {
+    var reader = new FileReader();
+    reader.onloadend = function() {
+        // Display the base64 URL in the input field
+        document.getElementById('image-url').value = reader.result;
+        // Set the image source to the base64 URL and display it
+        document.getElementById('image-preview').src = reader.result;
+        document.getElementById('image-preview').style.display = 'block';
+    }
+    reader.readAsDataURL(image);
+}
+
+        function encodeImageFileAsURL(element) {
+            var file = element.files[0];
+            var reader = new FileReader();
+            reader.onloadend = function() {
+                // Display the base64 URL in the input field
+                document.getElementById('image-url').value = reader.result;
+                // Set the image source to the base64 URL and display it
+                document.getElementById('image-preview').src = reader.result;
+                document.getElementById('image-preview').style.display = 'block';
+            }
+            reader.readAsDataURL(file);
+        }
+        // Click on drop-zone to trigger hidden file input click
+        document.getElementById('drop-zone').addEventListener('click', function() {
+            document.getElementById('fileInput').click();
+        });
+        // Allow drag and drop functionality
+        document.getElementById('drop-zone').addEventListener('dragover', function(event){
+            event.preventDefault();
+        });
+        document.getElementById('drop-zone').addEventListener('drop', function(event){
+            event.preventDefault();
+            if (event.dataTransfer.files.length) {
+                document.getElementById('fileInput').files = event.dataTransfer.files;
+                encodeImageFileAsURL(document.getElementById('fileInput'));
+            }
+        });
+        // Allow paste functionality
+        window.addEventListener('paste', (event) => {
+            if (event.clipboardData && event.clipboardData.files.length) {
+                document.getElementById('fileInput').files = event.clipboardData.files;
+                encodeImageFileAsURL(document.getElementById('fileInput'));
+            }
+        });
+    </script>
+</body>
+</html>

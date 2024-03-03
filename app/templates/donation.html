@@ -1,0 +1,58 @@
+<!-- templates/image_gallery.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="{{ url_for('static', filename='back/css/slider.css') }}">
+    <title>Image Gallery</title>
+    <style>
+        img {
+            max-width: 100%;
+            height: auto;
+            width: 200px; /* Set your desired width */
+            height: 200px; /* Set your desired height */
+            margin: 10px; /* Add some margin between images */
+            cursor: pointer; /* Add a pointer cursor for better UX */
+        }
+    </style>
+</head>
+<body>
+    <div id="sidebar">
+        {% include 'back_index.html' %}
+    </div>
+
+    <!-- <h1>Image Upload</h1>
+    <form action="/upload" method="post" enctype="multipart/form-data">
+        <input type="file" name="file" accept="image/*">
+        <input type="submit" value="Upload">
+    </form>
+    -->
+    <h1 style="    margin-left: 756px;
+    margin-top: 50px;">Donation Gallery</h1>
+    
+    <div class="container" style="margin-left: 732px;">
+        <div class="pic-container">
+            {% for image_name in image_names %}
+          <div class="pic pic-1">
+            <img class="pic__img" src="{{ url_for('uploaded_file', filename=image_name) }}" alt=''>
+          </div>
+            {% endfor %}
+        </div>
+        
+           
+      </div>
+      <div class='slider-btns' style="margin-top: 73px;margin-left: 833px;">
+        <button class="btn-left"><</button>
+        <button class="btn-right">></button>
+      </div>
+      <div class='slider-btns' style="margin-top: -110px;margin-left: 800px;">
+        <label for="email
+        ">email: {{ current_user.email }}</label>
+       
+    
+
+      </div>
+    <script src="{{ url_for('static', filename='back/js/slider.js') }}"></script>
+</body>
+</html>
