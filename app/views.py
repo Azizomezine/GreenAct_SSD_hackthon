@@ -28,7 +28,7 @@ load_dotenv()
 openai.api_key = os.getenv("OPENAI_API_KEY")
 API_URL = "https://api-inference.huggingface.co/models/stabilityai/stable-diffusion-xl-base-1.0"
 API_URL_trocr="https://api-inference.huggingface.co/models/microsoft/trocr-large-handwritten"
-headers = {"Authorization": "Bearer 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"}
+headers = {"Authorization": "Bearer "}
 import time
 from array import array
 from azure.cognitiveservices.vision.computervision import ComputerVisionClient
@@ -39,7 +39,6 @@ from azure.cognitiveservices.speech import SpeechSynthesizer
 from azure.cognitiveservices.speech.audio import AudioConfig
 from flask import send_file
 from io import BytesIO
-API_KEY = "a41984e997a74b999e979b08007ec70a"
 ENDPOINT = "https://francecentral.api.cognitive.microsoft.com/"
 computervision_client = ComputerVisionClient(ENDPOINT, CognitiveServicesCredentials(API_KEY))
 import azure.cognitiveservices.speech as speechsdk
@@ -533,7 +532,6 @@ load_dotenv()
 
 client = OpenAI(api_key="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")
 
-app.secret_key = 'sk1-sSazzapojzafopjafopjazopfjazf05ffzf'
 
 global gpt_response
 gpt_response = None
